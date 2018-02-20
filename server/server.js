@@ -18,6 +18,14 @@ app.post('/expenses', (req, res) => {
     });
 });
 
+
+app.get('/expenses', (req, res) => {
+    Expense.find().then((result) => {
+        res.send({result});
+    }).catch((err) => {
+        res.status(400).send(err);
+    });
+});
 app.listen(3000, () => {
     console.log('Application is running on port 3000');
 });
