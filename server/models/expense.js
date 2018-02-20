@@ -14,7 +14,7 @@ const expenseSchema = new mongoose.Schema({
         set: v => v.toFixed(2)
     },
     spentAt: {
-        type: Date,
+        type: Number,
         required: true
     },
 });
