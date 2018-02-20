@@ -4,9 +4,9 @@ const request = require('supertest');
 
 const {app} = require('./../server');
 const {Expense} = require('./../models/expense');
-const {removeExpenses} = require('./seed/seed');
+const {populateExpenses, expenses} = require('./seed/seed');
 
-beforeEach(removeExpenses);
+beforeEach(populateExpenses);
 
 describe('POST /expenses', () => {
     it('should add new expense', (done) => {
@@ -59,9 +59,21 @@ describe('POST /expenses', () => {
                     return done(err)
                 }
                 Expense.find().then((result) => {
-                    expect(result.length).to.equal(0);
+                    expect(result.length).to.equal(expenses.length);
                     done();
                 }).catch(err => done(err));
             });
+    });
+});
+
+describe('GET /expenses', () => {
+    it('should get all expenses', (done) => {
+        request(app)
+            .get('/expenses')
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.result.length).to.equal(expenses.length);
+            })
+            .end(done);
     });
 });
