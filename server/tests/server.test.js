@@ -1,4 +1,5 @@
 const {expect} = require('chai');
+const {ObjectID} = require('mongodb');
 const request = require('supertest');
 
 
@@ -76,4 +77,37 @@ describe('GET /expenses', () => {
             })
             .end(done);
     });
+});
+
+describe('GET /expenses/:id', () => {
+    it('should get an expense with valid id', (done) => {
+        request(app)
+            .get(`/expenses/${expenses[0]._id}`)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.result).to.deep.include(expenses[0]);
+            })
+            .end(done);
+    });
+
+    it('should return status 404 if todo not found', (done) => {
+        request(app)
+            .get(`/expense/${new ObjectID().toHexString()}`)
+            .expect(404)
+            .expect((res) => {
+                expect(res.body).to.empty;
+            })
+            .end(done);
+    });
+
+    it('should not return an expense with invalid :id', (done) => {
+        request(app)
+            .get('/expenses/1234abc')
+            .expect(400)
+            .expect((res) => {
+                expect(res.body).to.empty;
+            })
+            .end(done);
+    });
+
 });
