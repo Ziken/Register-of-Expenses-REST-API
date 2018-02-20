@@ -1,4 +1,5 @@
 const express = require('express');
+const {ObjectID} = require('mongodb');
 
 const mongoose = require('./db/mongoose');
 const {Expense} = require('./models/expense');
@@ -26,6 +27,23 @@ app.get('/expenses', (req, res) => {
         res.status(400).send(err);
     });
 });
+
+app.get('/expenses/:id', (req,res) => {
+    const id = req.params.id;
+    if (!ObjectID.isValid(id)) {
+        return res.status(400).send();
+    }
+
+    Expense.findById(id).then((result) => {
+        if (!result) {
+            return res.status(404).send();
+        }
+        res.send({result});
+    }).catch(() => {
+        res.status(404).send();
+    });
+});
+
 app.listen(3000, () => {
     console.log('Application is running on port 3000');
 });
