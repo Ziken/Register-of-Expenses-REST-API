@@ -111,3 +111,47 @@ describe('GET /expenses/:id', () => {
     });
 
 });
+
+describe('PATCH /expenses/:id', () => {
+    it('should update an expense', (done) => {
+        const expense = expenses[0];
+        const newTitle = 'New great title';
+        request(app)
+            .patch(`/expenses/${expense._id}`)
+            .send({title: newTitle})
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.result.title).to.equal(newTitle);
+            })
+            .end((err) => {
+                if (err) {
+                    return done(err);
+                }
+
+                Expense.find({title: newTitle}).then((result) => {
+                    expect(result.length).to.equal(1);
+                    done();
+                }).catch(err => done(err));
+            });
+    });
+
+    it('should return status 404 if todo not found', (done) => {
+        request(app)
+            .get(`/expense/${new ObjectID().toHexString()}`)
+            .expect(404)
+            .expect((res) => {
+                expect(res.body).to.empty;
+            })
+            .end(done);
+    });
+
+    it('should not update an expense with invalid :id', (done) => {
+        request(app)
+            .get('/expenses/1234abc')
+            .expect(400)
+            .expect((res) => {
+                expect(res.body).to.empty;
+            })
+            .end(done);
+    });
+});
