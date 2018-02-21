@@ -10,7 +10,7 @@ const {populateExpenses, expenses} = require('./seed/seed');
 beforeEach(populateExpenses);
 
 describe('POST /expenses', () => {
-    it('should add new expense', (done) => {
+    it('should add new expense document', (done) => {
         const expense = {
             title: 'Some title here',
             amount: 12.34,
@@ -41,7 +41,7 @@ describe('POST /expenses', () => {
             });
     });
 
-    it('should not add new expense with invalid data', (done) => {
+    it('should not add new expense document with invalid data', (done) => {
         const expense = {
             title: '    a    ',
             amount: 12.34,
@@ -68,7 +68,7 @@ describe('POST /expenses', () => {
 });
 
 describe('GET /expenses', () => {
-    it('should get all expenses', (done) => {
+    it('should get all expense documents', (done) => {
         request(app)
             .get('/expenses')
             .expect(200)
@@ -80,7 +80,7 @@ describe('GET /expenses', () => {
 });
 
 describe('GET /expenses/:id', () => {
-    it('should get an expense with valid id', (done) => {
+    it('should get an expense document with valid id', (done) => {
         request(app)
             .get(`/expenses/${expenses[0]._id}`)
             .expect(200)
@@ -90,7 +90,7 @@ describe('GET /expenses/:id', () => {
             .end(done);
     });
 
-    it('should return status 404 if todo not found', (done) => {
+    it('should return status 404 if expense document not found', (done) => {
         request(app)
             .get(`/expense/${new ObjectID().toHexString()}`)
             .expect(404)
@@ -100,7 +100,7 @@ describe('GET /expenses/:id', () => {
             .end(done);
     });
 
-    it('should not return an expense with invalid :id', (done) => {
+    it('should not return an expense document with invalid :id', (done) => {
         request(app)
             .get('/expenses/1234abc')
             .expect(400)
@@ -113,7 +113,7 @@ describe('GET /expenses/:id', () => {
 });
 
 describe('PATCH /expenses/:id', () => {
-    it('should update an expense', (done) => {
+    it('should update an expense document', (done) => {
         const expense = expenses[0];
         const newTitle = 'New great title';
         request(app)
@@ -135,7 +135,7 @@ describe('PATCH /expenses/:id', () => {
             });
     });
 
-    it('should return status 404 if todo not found', (done) => {
+    it('should return status 404 if expense document not found', (done) => {
         request(app)
             .get(`/expense/${new ObjectID().toHexString()}`)
             .expect(404)
@@ -145,7 +145,49 @@ describe('PATCH /expenses/:id', () => {
             .end(done);
     });
 
-    it('should not update an expense with invalid :id', (done) => {
+    it('should not update an expense document with invalid :id', (done) => {
+        request(app)
+            .get('/expenses/1234abc')
+            .expect(400)
+            .expect((res) => {
+                expect(res.body).to.empty;
+            })
+            .end(done);
+    });
+});
+
+describe('DELETE /expenses/:id', () => {
+    it('should remove an expense document', (done) => {
+        const expense = expenses[0];
+
+        request(app)
+            .delete(`/expenses/${expense._id}`)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.result).to.include(expense);
+            })
+            .end((err) => {
+                if (err) {
+                    return done(err);
+                }
+                Expense.findById(expense._id).then((result) => {
+                    expect(result).to.be.null;
+                    done();
+                }).catch(err => done(err));
+            });
+    });
+
+    it('should return status 404 if expense document not found', (done) => {
+        request(app)
+            .get(`/expense/${new ObjectID().toHexString()}`)
+            .expect(404)
+            .expect((res) => {
+                expect(res.body).to.empty;
+            })
+            .end(done);
+    });
+
+    it('should not remove an expense document with invalid :id', (done) => {
         request(app)
             .get('/expenses/1234abc')
             .expect(400)
