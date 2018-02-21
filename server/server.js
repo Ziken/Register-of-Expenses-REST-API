@@ -1,4 +1,5 @@
 const express = require('express');
+const _ = require('lodash');
 const {ObjectID} = require('mongodb');
 
 const mongoose = require('./db/mongoose');
@@ -42,6 +43,32 @@ app.get('/expenses/:id', (req,res) => {
     }).catch(() => {
         res.status(404).send();
     });
+});
+
+app.patch('/expenses/:id', (req, res) => {
+    const id = req.params.id;
+
+    if (!ObjectID.isValid(id)) {
+        return res.status(400).send();
+    }
+    const body = _.pick(req.body, 'title', 'amount', 'spentAt');
+
+    Expense.findOneAndUpdate({
+        _id: id
+    }, {
+        $set: body
+    }, {
+        new: true
+    }).then((result) => {
+        if (!result) {
+            return res.status(404).send();
+        }
+
+        res.send(result);
+    }).catch(() => {
+        res.status(400).send();
+    })
+
 });
 
 app.listen(3000, () => {
