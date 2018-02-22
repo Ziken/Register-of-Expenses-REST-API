@@ -5,6 +5,7 @@ const {ObjectID} = require('mongodb');
 
 const mongoose = require('./db/mongoose');
 const {Expense} = require('./models/expense');
+const {User} = require('./models/user');
 
 const app = express();
 const PORT = process.env.PORT;
@@ -89,6 +90,22 @@ app.delete('/expenses/:id', (req, res) => {
         res.status(400).send();
     });
 });
+
+//=========
+//  USER
+//=========
+app.post('/users', (req,res) => {
+    const {email, password} = req.body;
+    const user = new User({email, password});
+
+    user.save().then((result) => {
+        res.send({result});
+    }).catch((err) => {
+        res.status(400).send(err);
+    });
+});
+
+
 
 
 app.listen(PORT, () => {
