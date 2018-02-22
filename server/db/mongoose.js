@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-mongoose.connect('mongodb://localhost:27017/ExpensesRegister').catch((err) => {
+mongoose.connect(process.env.MONGOHQ_URL || 'mongodb://localhost:27017/ExpensesRegister').catch((err) => {
     console.log(err);
     process.exit(1);
 });

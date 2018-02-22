@@ -6,6 +6,7 @@ const mongoose = require('./db/mongoose');
 const {Expense} = require('./models/expense');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(require('body-parser').json());
 
@@ -89,8 +90,8 @@ app.delete('/expenses/:id', (req, res) => {
 });
 
 
-app.listen(3000, () => {
-    console.log('Application is running on port 3000');
+app.listen(PORT, () => {
+    console.log(`Application is running on port ${PORT}`);
 });
 
 module.exports = {

@@ -16,6 +16,7 @@
     "supertest": "^3.0.0"
   },
   "scripts": {
+    "start": "node server/server.js",
     "test": "mocha server/**/*.test.js"
   },
   "repository": {
@@ -24,6 +25,9 @@
   },
   "author": "Ziken",
   "license": "ISC",
+  "engines": {
+    "node": "8.9.4"
+  },
   "bugs": {
     "url": "https://github.com/Ziken/Register-of-Expenses-REST-API/issues"
   },
