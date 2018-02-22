@@ -5,9 +5,11 @@ const request = require('supertest');
 
 const {app} = require('./../server');
 const {Expense} = require('./../models/expense');
-const {populateExpenses, expenses} = require('./seed/seed');
+const {User} = require('./../models/user');
+const {populateExpenses, expenses, populateUsers, users} = require('./seed/seed');
 
 beforeEach(populateExpenses);
+beforeEach(populateUsers);
 
 describe('POST /expenses', () => {
     it('should add new expense document', (done) => {
@@ -195,5 +197,72 @@ describe('DELETE /expenses/:id', () => {
                 expect(res.body).to.empty;
             })
             .end(done);
+    });
+});
+
+describe('POST /users', () => {
+    it('should add user', (done) => {
+        const user = {
+            email: 'testemail@test.com',
+            password: '123qwe'
+        };
+
+        request(app)
+            .post('/users')
+            .send({email: user.email, password: user.password})
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.result).to.include(user)
+            })
+            .end((err) => {
+                if (err) {
+                    return done(err);
+                }
+                User.find({email: user.email}).then((result) => {
+                    expect(result.length).to.equal(1);
+                    done();
+                }).catch(err => done(err));
+            });
+    });
+
+    it('should not add user with invalid data', (done) => {
+        const user = {
+            email: 'testemail.com',
+            password: '12we'
+        };
+
+        request(app)
+            .post('/users')
+            .send({email: user.email, password: user.password})
+            .expect(400)
+            .end((err) => {
+                if (err) {
+                    return done(err);
+                }
+
+                User.find({email: user.email}).then((result) => {
+                    expect(result).to.be.empty;
+                    done();
+                }).catch(err => done(err));
+            });
+    });
+
+    it('should not add user with existing email', (done) => {
+        const user = users[0];
+
+        request(app)
+            .post('/users')
+            .send({email: user.email, password: user.password})
+            .expect(400)
+            .end((err) => {
+                if (err) {
+                    return done(err);
+                }
+
+                User.find({email: user.email}).then((result) => {
+                    expect(result.length).to.equal(1);
+                    done();
+                }).catch(err => done(err));
+            });
     });
 });

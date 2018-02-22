@@ -1,4 +1,5 @@
 const {Expense} = require('./../../models/expense');
+const {User} = require('./../../models/user');
 const {ObjectID} = require('mongodb');
 const expenses = [
     {
@@ -38,7 +39,38 @@ const populateExpenses = (done) => {
         .catch(err => done(err));
 };
 
+const users = [
+    {
+        _id: new ObjectID().toHexString(),
+        email: 'example@example.com',
+        password: '123abc'
+    },
+    {
+        _id: new ObjectID().toHexString(),
+        email: 'someone@other.com',
+        password: 'abc123'
+    }
+];
+
+const populateUsers = (done) => {
+    User.remove({}).then(() => {
+        const addedUsers = [];
+        users.forEach((u) => {
+            addedUsers.push(new User({
+                _id: u._id,
+                email: u.email,
+                password: u.password
+            }).save());
+        });
+
+        return Promise.resolve(addedUsers);
+    }).then(() => done()).catch(err => done(err));
+};
+
+
 module.exports = {
     expenses,
-    populateExpenses
+    populateExpenses,
+    users,
+    populateUsers
 };
