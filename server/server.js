@@ -6,6 +6,7 @@ const {ObjectID} = require('mongodb');
 const mongoose = require('./db/mongoose');
 const {Expense} = require('./models/expense');
 const {User} = require('./models/user');
+const {authenticate} = require('./middleware/authenticate');
 
 const app = express();
 const PORT = process.env.PORT;
@@ -98,14 +99,18 @@ app.post('/users', (req,res) => {
     const {email, password} = req.body;
     const user = new User({email, password});
 
-    user.save().then((result) => {
-        res.send({result});
+    user.save().then(() => {
+        return  user.generateAuthToken();
+    }).then((token) => {
+        res.header('x-auth', token).send({result: user});
     }).catch((err) => {
         res.status(400).send(err);
     });
 });
 
-
+app.get('/users/me', authenticate, (req, res) => {
+    res.header('x-auth', req.token).send(req.user);
+});
 
 
 app.listen(PORT, () => {
