@@ -222,6 +222,7 @@ describe('POST /users', () => {
                 }
                 User.find({email: user.email, 'tokens.token': res.get('x-auth')}).then((result) => {
                     expect(result.length).to.equal(1);
+                    expect(result.password).to.not.equal(user.password); // hashed password
                     done();
                 }).catch(err => done(err));
             });
@@ -291,6 +292,55 @@ describe('GET /users/me', () => {
             .expect((res) => {
                 expect(res.body).to.empty;
             })
+            .end(done);
+    });
+});
+
+describe('POST /users/login', () => {
+    it('should login user and return x-auth', (done) => {
+        const user = users[0];
+        request(app)
+            .post('/users/login')
+            .send({
+                email: user.email,
+                password: user.password
+            })
+            .expect(200)
+            .expect((res) => {
+                expect(res.get('x-auth')).to.exist;
+                expect(res.body.result._id).to.equal(user._id);
+                expect(res.body.result.email).to.equal(user.email);
+            })
+            .end((err, res) => {
+                if (err) {
+                    return done(err)
+                }
+                User.findByToken(res.get('token')).then((u) => {
+                    expect(u._id).to.equal(user._id);
+                }).catch(err => done(err))
+            });
+    });
+
+    it('should not login user with invalid password', (done) => {
+        const user = users[0];
+        request(app)
+            .post('/users/login')
+            .send({
+                email: user.email,
+                password: user.password+'invalid'
+            })
+            .expect(401)
+            .end(done);
+    });
+
+    it('should notlog in user with invalid credentials', (done) => {
+        request(app)
+            .post('/users/login')
+            .send({
+                email: 'some@invalid.email',
+                password: 'invaidPassword'
+            })
+            .expect(401)
             .end(done);
     });
 });
