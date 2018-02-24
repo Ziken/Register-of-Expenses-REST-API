@@ -112,6 +112,18 @@ app.get('/users/me', authenticate, (req, res) => {
     res.header('x-auth', req.token).send({result: req.user});
 });
 
+app.post('/users/login', (req,res) => {
+    const {email, password} = req.body;
+
+    User.authByCredentials(email, password).then((user) => {
+        return user.generateAuthToken().then((token) => {
+            res.header('x-auth', token).send({result: user});
+        });
+    }).catch(() => {
+        res.status(401).send();
+    });
+});
+
 
 app.listen(PORT, () => {
     console.log(`Application is running on port ${PORT}`);
