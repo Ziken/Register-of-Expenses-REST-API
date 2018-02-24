@@ -1,3 +1,5 @@
+const jwt = require('jsonwebtoken');
+
 const {Expense} = require('./../../models/expense');
 const {User} = require('./../../models/user');
 const {ObjectID} = require('mongodb');
@@ -39,31 +41,42 @@ const populateExpenses = (done) => {
         .catch(err => done(err));
 };
 
+const userOneID = new ObjectID().toHexString();
+const userTwoID = new ObjectID().toHexString();
 const users = [
     {
-        _id: new ObjectID().toHexString(),
+        _id: userOneID,
         email: 'example@example.com',
-        password: '123abc'
+        password: '123abc',
+        tokens: [{
+            access: 'auth',
+            token: jwt.sign({_id: userOneID, access: 'auth'}, 'verysecrettoken').toString()
+        }]
     },
     {
-        _id: new ObjectID().toHexString(),
+        _id: userTwoID,
         email: 'someone@other.com',
-        password: 'abc123'
+        password: 'abc123',
+        tokens: [{
+            access: 'auth',
+            token: jwt.sign({_id: userTwoID, access: 'auth'}, 'verysecrettoken').toString()
+        }]
     }
 ];
 
 const populateUsers = (done) => {
     User.remove({}).then(() => {
+
         const addedUsers = [];
         users.forEach((u) => {
             addedUsers.push(new User({
                 _id: u._id,
                 email: u.email,
-                password: u.password
+                password: u.password,
+                tokens: u.tokens
             }).save());
         });
-
-        return Promise.resolve(addedUsers);
+        return Promise.all(addedUsers);
     }).then(() => done()).catch(err => done(err));
 };
 

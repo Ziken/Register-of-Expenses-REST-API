@@ -212,13 +212,15 @@ describe('POST /users', () => {
             .send({email: user.email, password: user.password})
             .expect(200)
             .expect((res) => {
-                expect(res.body.result).to.include(user)
+                expect(res.body.result.email).to.equal(user.email);
+                expect(res.get("x-auth")).to.exist;
+
             })
-            .end((err) => {
+            .end((err, res) => {
                 if (err) {
                     return done(err);
                 }
-                User.find({email: user.email}).then((result) => {
+                User.find({email: user.email, 'tokens.token': res.get('x-auth')}).then((result) => {
                     expect(result.length).to.equal(1);
                     done();
                 }).catch(err => done(err));
@@ -264,5 +266,31 @@ describe('POST /users', () => {
                     done();
                 }).catch(err => done(err));
             });
+    });
+});
+
+describe('GET /users/me', () => {
+    it('should authenticate user', (done) => {
+        const user = users[0];
+        request(app)
+            .get('/users/me')
+            .set('x-auth', user.tokens[0].token)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.result._id).to.equal(user._id);
+                expect(res.body.result.email).to.equal(user.email);
+            })
+            .end(done);
+    });
+
+    it('should not authenticate user with invalid token', (done) => {
+        request(app)
+            .get('/users/me')
+            .set('x-auth', 'invalid_toke')
+            .expect(401)
+            .expect((res) => {
+                expect(res.body).to.empty;
+            })
+            .end(done);
     });
 });

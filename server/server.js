@@ -109,7 +109,7 @@ app.post('/users', (req,res) => {
 });
 
 app.get('/users/me', authenticate, (req, res) => {
-    res.header('x-auth', req.token).send(req.user);
+    res.header('x-auth', req.token).send({result: req.user});
 });
 
 
