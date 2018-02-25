@@ -17,6 +17,10 @@ const expenseSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    _creator: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+    }
 });
 
 const Expense = mongoose.model('Expense', expenseSchema);

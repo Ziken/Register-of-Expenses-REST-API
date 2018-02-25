@@ -13,9 +13,9 @@ const PORT = process.env.PORT;
 
 app.use(require('body-parser').json());
 
-app.post('/expenses', (req, res) => {
+app.post('/expenses', authenticate, (req, res) => {
     const {title, amount, spentAt} = req.body;
-    const expense = new Expense({title, amount, spentAt});
+    const expense = new Expense({title, amount, spentAt, _creator: req.user._id});
 
     expense.save().then((result) => {
         res.send({result});
@@ -25,21 +25,25 @@ app.post('/expenses', (req, res) => {
 });
 
 
-app.get('/expenses', (req, res) => {
-    Expense.find().then((result) => {
+app.get('/expenses',authenticate ,(req, res) => {
+    const id = req.user._id;
+    Expense.find({_creator: id}).then((result) => {
         res.send({result});
     }).catch((err) => {
         res.status(400).send(err);
     });
 });
 
-app.get('/expenses/:id', (req,res) => {
+app.get('/expenses/:id', authenticate, (req,res) => {
     const id = req.params.id;
     if (!ObjectID.isValid(id)) {
         return res.status(400).send();
     }
 
-    Expense.findById(id).then((result) => {
+    Expense.findOne({
+        _id: id,
+        _creator: req.user._id
+    }).then((result) => {
         if (!result) {
             return res.status(404).send();
         }
@@ -49,7 +53,7 @@ app.get('/expenses/:id', (req,res) => {
     });
 });
 
-app.patch('/expenses/:id', (req, res) => {
+app.patch('/expenses/:id', authenticate,(req, res) => {
     const id = req.params.id;
 
     if (!ObjectID.isValid(id)) {
@@ -58,7 +62,8 @@ app.patch('/expenses/:id', (req, res) => {
     const body = _.pick(req.body, 'title', 'amount', 'spentAt');
 
     Expense.findOneAndUpdate({
-        _id: id
+        _id: id,
+        _creator: req.user._id
     }, {
         $set: body
     }, {
@@ -74,14 +79,17 @@ app.patch('/expenses/:id', (req, res) => {
     });
 });
 
-app.delete('/expenses/:id', (req, res) => {
+app.delete('/expenses/:id', authenticate, (req, res) => {
     const id = req.params.id;
 
     if (!ObjectID.isValid(id)) {
         return res.status(400).send();
     }
 
-    Expense.findByIdAndRemove(id).then((result) => {
+    Expense.findOneAndRemove({
+        _id: id,
+        _creator: req.user._id
+    }).then((result) => {
         if (!result) {
             return res.status(404).send();
         }
