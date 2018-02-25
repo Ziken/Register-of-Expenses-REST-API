@@ -18,6 +18,7 @@ describe('POST /expenses', () => {
             amount: 12.34,
             spentAt: new Date().getTime()
         };
+        const user = users[1];
         request(app)
             .post('/expenses')
             .send({
@@ -25,6 +26,7 @@ describe('POST /expenses', () => {
                 amount: expense.amount,
                 spentAt: expense.spentAt
             })
+            .set('x-auth', user.tokens[0].token)
             .expect(200)
             .expect((res) => {
                 Object.keys(expense).forEach((key) => {
@@ -36,8 +38,8 @@ describe('POST /expenses', () => {
                     return done(err);
                 }
 
-                Expense.find({title: expense.title}).then((result) => {
-                    expect(result.length).to.equal(1);
+                Expense.findOne({title: expense.title, _creator: user._id}).then((result) => {
+                    expect(result).to.exist;
                     done();
                 }).catch(err => done(err));
             });
@@ -49,6 +51,7 @@ describe('POST /expenses', () => {
             amount: 12.34,
             spentAt: new Date().getTime()
         };
+        const user = users[1];
         request(app)
             .post('/expenses')
             .send({
@@ -56,26 +59,59 @@ describe('POST /expenses', () => {
                 amount: expense.amount,
                 spentAt: expense.spentAt
             })
+            .set('x-auth', user.tokens[0].token)
             .expect(400)
             .end((err) => {
                 if (err) {
                     return done(err)
                 }
-                Expense.find().then((result) => {
-                    expect(result.length).to.equal(expenses.length);
+                Expense.find({_creator: user._id}).then((result) => {
+                    expect(result.length).to.equal(0);
                     done();
                 }).catch(err => done(err));
             });
     });
+
+    it('should not add new expense document if user is not authorized', (done) => {
+        const expense = {
+            title: 'Some title here',
+            amount: 12.34,
+            spentAt: new Date().getTime()
+        };
+        request(app)
+            .post('/expenses')
+            .send({
+                title: expense.title,
+                amount: expense.amount,
+                spentAt: expense.spentAt
+            })
+            .set('x-auth', 'invalid_token')
+            .expect(401)
+            .end(done)
+    });
 });
 
 describe('GET /expenses', () => {
-    it('should get all expense documents', (done) => {
+    it('should get all user\'s expense documents', (done) => {
+        const user = users[0];
         request(app)
             .get('/expenses')
+            .set('x-auth', user.tokens[0].token)
             .expect(200)
             .expect((res) => {
-                expect(res.body.result.length).to.equal(expenses.length);
+                expect(res.body.result.length).to.equal(2);
+            })
+            .end(done);
+    });
+
+    it('should not get all other user\'s expense documents', (done) => {
+        const user = users[1];
+        request(app)
+            .get('/expenses')
+            .set('x-auth', user.tokens[0].token)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.result).to.empty;
             })
             .end(done);
     });
@@ -83,8 +119,10 @@ describe('GET /expenses', () => {
 
 describe('GET /expenses/:id', () => {
     it('should get an expense document with valid id', (done) => {
+        const user = users[0];
         request(app)
             .get(`/expenses/${expenses[0]._id}`)
+            .set('x-auth', user.tokens[0].token)
             .expect(200)
             .expect((res) => {
                 expect(res.body.result).to.deep.include(expenses[0]);
@@ -93,8 +131,22 @@ describe('GET /expenses/:id', () => {
     });
 
     it('should return status 404 if expense document not found', (done) => {
+        const user = users[0];
         request(app)
             .get(`/expense/${new ObjectID().toHexString()}`)
+            .set('x-auth', user.tokens[0].token)
+            .expect(404)
+            .expect((res) => {
+                expect(res.body).to.empty;
+            })
+            .end(done);
+    });
+
+    it('should not return expense document of other user', (done) => {
+        const user = users[1];
+        request(app)
+            .get(`/expenses/${expenses[0]._id}`)
+            .set('x-auth', user.tokens[0].token)
             .expect(404)
             .expect((res) => {
                 expect(res.body).to.empty;
@@ -103,8 +155,10 @@ describe('GET /expenses/:id', () => {
     });
 
     it('should not return an expense document with invalid :id', (done) => {
+        const user = users[0];
         request(app)
             .get('/expenses/1234abc')
+            .set('x-auth', user.tokens[0].token)
             .expect(400)
             .expect((res) => {
                 expect(res.body).to.empty;
@@ -112,15 +166,18 @@ describe('GET /expenses/:id', () => {
             .end(done);
     });
 
+
 });
 
 describe('PATCH /expenses/:id', () => {
     it('should update an expense document', (done) => {
         const expense = expenses[0];
+        const user = users[0];
         const newTitle = 'New great title';
         request(app)
             .patch(`/expenses/${expense._id}`)
             .send({title: newTitle})
+            .set('x-auth', user.tokens[0].token)
             .expect(200)
             .expect((res) => {
                 expect(res.body.result.title).to.equal(newTitle);
@@ -130,7 +187,7 @@ describe('PATCH /expenses/:id', () => {
                     return done(err);
                 }
 
-                Expense.find({title: newTitle}).then((result) => {
+                Expense.find({title: newTitle, _creator: user._id}).then((result) => {
                     expect(result.length).to.equal(1);
                     done();
                 }).catch(err => done(err));
@@ -138,8 +195,11 @@ describe('PATCH /expenses/:id', () => {
     });
 
     it('should return status 404 if expense document not found', (done) => {
+        const user = users[0];
         request(app)
-            .get(`/expense/${new ObjectID().toHexString()}`)
+            .patch(`/expense/${new ObjectID().toHexString()}`)
+            .send({title: 'Great title'})
+            .set('x-auth', user.tokens[0].token)
             .expect(404)
             .expect((res) => {
                 expect(res.body).to.empty;
@@ -147,23 +207,60 @@ describe('PATCH /expenses/:id', () => {
             .end(done);
     });
 
-    it('should not update an expense document with invalid :id', (done) => {
+    it('should not update document of other user', (done) => {
+        const user = users[1];
+        const newTitle = 'Great title 123';
+
         request(app)
-            .get('/expenses/1234abc')
+            .patch(`/expenses/${expenses[0]._id}`)
+            .send({title: 'Great title'})
+            .set('x-auth', user.tokens[0].token)
+            .expect(404)
+            .expect((res) => {
+                expect(res.body).to.empty;
+            })
+            .end((err) => {
+                if (err) {
+                    return done(err)
+                }
+                Expense.findOne({title: newTitle}).then((result) => {
+                    expect(result).to.be.null;
+                    done();
+                }).catch(err => done(err));
+            });
+    });
+
+    it('should not update an expense document with invalid :id', (done) => {
+        const user = users[0];
+        const newTitle = 'Great title 123';
+
+        request(app)
+            .patch('/expenses/1234abc')
+            .send({title: newTitle})
+            .set('x-auth', user.tokens[0].token)
             .expect(400)
             .expect((res) => {
                 expect(res.body).to.empty;
             })
-            .end(done);
+            .end((err) => {
+                if (err) {
+                    return done(err)
+                }
+                Expense.findOne({title: newTitle}).then((result) => {
+                    expect(result).to.be.null;
+                    done();
+                }).catch(err => done(err));
+            });
     });
 });
 
 describe('DELETE /expenses/:id', () => {
     it('should remove an expense document', (done) => {
         const expense = expenses[0];
-
+        const user = users[0];
         request(app)
             .delete(`/expenses/${expense._id}`)
+            .set('x-auth', user.tokens[0].token)
             .expect(200)
             .expect((res) => {
                 expect(res.body.result).to.include(expense);
@@ -172,7 +269,10 @@ describe('DELETE /expenses/:id', () => {
                 if (err) {
                     return done(err);
                 }
-                Expense.findById(expense._id).then((result) => {
+                Expense.findOne({
+                    _id: expense._id,
+                    _creator: user._id
+                }).then((result) => {
                     expect(result).to.be.null;
                     done();
                 }).catch(err => done(err));
@@ -180,8 +280,10 @@ describe('DELETE /expenses/:id', () => {
     });
 
     it('should return status 404 if expense document not found', (done) => {
+        const user = users[1];
         request(app)
-            .get(`/expense/${new ObjectID().toHexString()}`)
+            .delete(`/expense/${new ObjectID().toHexString()}`)
+            .set('x-auth', user.tokens[0].token)
             .expect(404)
             .expect((res) => {
                 expect(res.body).to.empty;
@@ -190,13 +292,36 @@ describe('DELETE /expenses/:id', () => {
     });
 
     it('should not remove an expense document with invalid :id', (done) => {
+        const user = users[1];
         request(app)
-            .get('/expenses/1234abc')
+            .delete('/expenses/1234abc')
+            .set('x-auth', user.tokens[0].token)
             .expect(400)
             .expect((res) => {
                 expect(res.body).to.empty;
             })
             .end(done);
+    });
+
+    it('should not remove document of other user', (done) => {
+        const user = users[1];
+        const expense = expenses[0];
+        request(app)
+            .delete(`/expenses/${expense._id}`)
+            .set('x-auth', user.tokens[0].token)
+            .expect(404)
+            .expect((res) => {
+                expect(res.body).to.empty;
+            })
+            .end((err) => {
+                if (err) {
+                    return done(err)
+                }
+                Expense.findById(expense._id).then((result) => {
+                    expect(result).to.be.not.null;
+                    done();
+                }).catch(err => done(err));
+            });
     });
 });
 
@@ -297,7 +422,7 @@ describe('GET /users/me', () => {
 });
 
 describe('POST /users/login', () => {
-    it('should login user and return x-auth', (done) => {
+    it('should log in user', (done) => {
         const user = users[0];
         request(app)
             .post('/users/login')
@@ -321,7 +446,7 @@ describe('POST /users/login', () => {
             });
     });
 
-    it('should not login user with invalid password', (done) => {
+    it('should not log in user with invalid password', (done) => {
         const user = users[0];
         request(app)
             .post('/users/login')
