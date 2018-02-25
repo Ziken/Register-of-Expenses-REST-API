@@ -124,6 +124,16 @@ app.post('/users/login', (req,res) => {
     });
 });
 
+app.post('/users/logout', authenticate, (req, res) => {
+
+    req.user.removeToken(req.token).then(() => {
+        res.send();
+    }).catch(() => {
+        res.send(400).send();
+    });
+
+});
+
 
 app.listen(PORT, () => {
     console.log(`Application is running on port ${PORT}`);
