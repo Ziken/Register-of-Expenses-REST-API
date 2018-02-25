@@ -333,13 +333,45 @@ describe('POST /users/login', () => {
             .end(done);
     });
 
-    it('should notlog in user with invalid credentials', (done) => {
+    it('should not log in user with invalid credentials', (done) => {
         request(app)
             .post('/users/login')
             .send({
                 email: 'some@invalid.email',
                 password: 'invaidPassword'
             })
+            .expect(401)
+            .end(done);
+    });
+});
+
+
+describe('POST /users/logout', () => {
+    it('should log out user', (done) => {
+        const user = users[0];
+        const token = users[0].tokens[0].token;
+        request(app)
+            .post('/users/logout')
+            .set('x-auth', token)
+            .expect(200)
+            .end((err) => {
+                if (err) {
+                    return done(err)
+                }
+
+                User.findOne({_id: user._id, 'tokens.token': token}).then((result) => {
+                    expect(result).to.be.null;
+                    done();
+                }).catch(err => done(err));
+            });
+    });
+
+    it('should not log out user with invalid token', (done) => {
+        const user = users[0];
+        const token = '123abc';
+        request(app)
+            .post('/users/logout')
+            .set('x-auth', token)
             .expect(401)
             .end(done);
     });
