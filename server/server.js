@@ -20,7 +20,7 @@ app.post('/expenses', authenticate, (req, res) => {
     expense.save().then((result) => {
         res.send({result});
     }).catch((err) => {
-        res.status(400).send(err);
+        res.status(400).send();
     });
 });
 
@@ -30,7 +30,7 @@ app.get('/expenses',authenticate ,(req, res) => {
     Expense.find({_creator: id}).then((result) => {
         res.send({result});
     }).catch((err) => {
-        res.status(400).send(err);
+        res.status(400).send();
     });
 });
 

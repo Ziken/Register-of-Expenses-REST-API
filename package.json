@@ -19,7 +19,7 @@
     "supertest": "^3.0.0"
   },
   "scripts": {
-    "start": "node server/server.js",
+    "start": "export NODE_ENV=production || SET \"NODE_ENV=production\" && node server/server.js",
     "test": "export NODE_ENV=test || SET \"NODE_ENV=test\" && mocha server/**/*.test.js"
   },
   "repository": {
