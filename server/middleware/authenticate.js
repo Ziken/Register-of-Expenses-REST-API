@@ -1,19 +1,19 @@
 const {User} = require('./../models/user');
+const {newErr} = require('./../middleware/handleError');
 
-const authenticate = (req, res, next) => {
-    const token = req.header('x-auth');
-
-    User.findByToken(token).then((user) => {
+const authenticate = async (req, res, next) => {
+    try {
+        const token = req.header('x-auth');
+        const user = await User.findByToken(token);
         if (!user) {
-            return Promise.reject();
+            throw new Error()
         }
-
         req.user = user;
         req.token = token;
         next();
-    }).catch(() => {
-        res.status(401).send('invalid token');
-    });
+    } catch (err) {
+        next(newErr(401, 'invalid token'))
+    }
 };
 
 module.exports = {

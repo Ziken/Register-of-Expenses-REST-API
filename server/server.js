@@ -12,6 +12,8 @@ app.use(require('body-parser').json());
 app.use('/expenses', expensesRouter);
 app.use('/users', usersRouter);
 
+app.use(require('./middleware/handleError').handleError);
+
 app.listen(PORT, () => {
     console.log(`Application is running on port ${PORT}`);
 });
